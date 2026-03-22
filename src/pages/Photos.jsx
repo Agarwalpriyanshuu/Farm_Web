@@ -4,14 +4,10 @@ export default function Photos() {
   return (
     <>
       <Navbar />
-      <div style={container}>
-        <h2>Farm Photos</h2>
-        <p>Coming soon...</p>
+      <div className="pt-24 p-10 text-center">
+        <h2 className="text-3xl mb-4">Farm Photos</h2>
+        <p className="text-gray-400">Coming soon...</p>
       </div>
     </>
   )
-}
-
-const container = {
-  padding: "40px"
 }

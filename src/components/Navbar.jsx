@@ -1,29 +1,100 @@
-import { Link } from "react-router-dom"
+import { Link, useNavigate, useLocation } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { supabase } from "../supabaseClient"
 
 export default function Navbar() {
-  return (
-    <div style={nav}>
-      <h2 style={{ color: "#22c55e" }}>🌱 ANUSHONA FARM</h2>
+  const [session, setSession] = useState(null)
+  const navigate = useNavigate()
+  const location = useLocation()
 
-      <div style={menu}>
-        <Link to="/">Overview</Link>
-        <Link to="/photos">Photos</Link>
-        <Link to="/login">Login</Link>
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session)
+      }
+    )
+
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate("/")
+  }
+
+  // 🎯 Helper for active link
+  const isActive = (path) => location.pathname === path
+
+  return (
+    <div className="fixed w-full top-0 z-50 bg-black/40 backdrop-blur border-b border-white/10">
+      <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
+
+        <h1 className="text-green-400 font-bold text-xl">
+          🌱 ANUSHONA FARM
+        </h1>
+
+        <div className="flex gap-6 items-center text-sm">
+
+          <Link
+            to="/"
+            className={isActive("/") ? activeClass : normalClass}
+          >
+            Home
+          </Link>
+
+          <Link
+            to="/overview"
+            className={isActive("/overview") ? activeClass : normalClass}
+          >
+            Overview
+          </Link>
+
+          <Link
+            to="/photos"
+            className={isActive("/photos") ? activeClass : normalClass}
+          >
+            Photos
+          </Link>
+
+          {session ? (
+            <>
+              <Link
+                to="/dashboard"
+                className={isActive("/dashboard") ? activeClass : normalClass}
+              >
+                Dashboard
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              className={isActive("/login") ? activeClass : loginActiveClass}
+            >
+              Login
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-const nav = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: "15px 30px",
-  background: "#020617",
-  borderBottom: "1px solid #1e293b"
-}
+const normalClass =
+  "text-gray-300 hover:text-green-400 transition"
 
-const menu = {
-  display: "flex",
-  gap: "20px"
-}
+const activeClass =
+  "text-green-400 font-semibold border-b-2 border-green-400 pb-1"
+
+const loginActiveClass =
+  "bg-green-500 px-4 py-2 rounded-lg hover:bg-green-600 text-white"

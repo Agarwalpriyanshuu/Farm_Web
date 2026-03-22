@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import PropTypes from "prop-types"
 import { supabase } from "../supabaseClient"
 import { Navigate } from "react-router-dom"
 
@@ -14,15 +13,8 @@ export default function ProtectedRoute({ children }) {
     })
   }, [])
 
-  if (loading) return <div>Loading...</div>
-
-  if (!session) {
-    return <Navigate to="/login" />
-  }
+  if (loading) return <div className="p-10">Loading...</div>
+  if (!session) return <Navigate to="/login" />
 
   return children
-}
-
-ProtectedRoute.propTypes = {
-  children: PropTypes.node.isRequired,
 }

@@ -1,63 +1,27 @@
-import PropTypes from 'prop-types'
-
 export default function NodeCard({ node, id }) {
-  const percent = node ? node.percent : 0
-//  const isActive = node && (Date.now() - new Date(node.timestamp)) < 60000
-  const isActive = node !== undefined 
-  return (
-    <div style={cardStyle}>
-      <h3>Node {id}</h3>
+  const percent = node?.percent || 0
+  const isActive = node !== undefined
 
-      <div style={cylinderOuter}>
+  return (
+    <div
+      className="bg-gray-800 p-6 rounded-xl text-center transition"
+      onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+      onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+    >
+      <h3 className="mb-4 text-lg">Node {id}</h3>
+
+      <div className="h-40 w-16 mx-auto border rounded-full overflow-hidden">
         <div
-          style={{
-            ...cylinderInner,
-            height: `${percent}%`,
-            backgroundColor: isActive ? "#4CAF50" : "#FF4C4C"
-          }}
+          className={`w-full ${
+            isActive ? "bg-green-500" : "bg-red-500"
+          }`}
+          style={{ height: `${percent}%` }}
         />
       </div>
 
-      <p style={{ marginTop: "10px" }}>
-        {isActive ? (
-          <span style={{ color: "#22c55e" }}>🟢 {percent}%</span>
-        ) : (
-          <span style={{ color: "#ef4444" }}>🔴 Offline</span>
-        )}
+      <p className="mt-4">
+        {isActive ? `${percent}%` : "Offline"}
       </p>
-      
     </div>
   )
-}
-
-const cardStyle = {
-  background: "#1e293b",
-  padding: "20px",
-  borderRadius: "12px",
-  textAlign: "center",
-  boxShadow: "0 4px 10px rgba(0,0,0,0.3)"
-}
-
-const cylinderOuter = {
-  height: "140px",
-  width: "60px",
-  border: "2px solid #94a3b8",
-  borderRadius: "30px",
-  margin: "15px auto",
-  display: "flex",
-  alignItems: "flex-end",
-  overflow: "hidden",
-  background: "#0f172a"
-}
-
-const cylinderInner = {
-  width: "100%",
-  transition: "height 0.5s ease"
-}
-
-NodeCard.propTypes = {
-  node: PropTypes.shape({
-    percent: PropTypes.number.isRequired
-  }),
-  id: PropTypes.number.isRequired
 }

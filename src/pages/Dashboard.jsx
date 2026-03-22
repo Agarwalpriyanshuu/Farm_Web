@@ -35,10 +35,10 @@ export default function Dashboard() {
     <>
         <Navbar />
 
-        <div style={{ padding: "20px" }}>
-        <h2>📊 Farm Monitoring</h2>
+        <div className="pt-24 p-6">
+        <h2 className="text-2xl mb-6">📊 Farm Status</h2>
 
-        <div style={gridStyle}>
+        <div className="grid md:grid-cols-5 gap-6">
             {[...Array(10)].map((_, i) => {
             const nodeId = i + 1
             const node = nodes.find(n => n.node === nodeId)

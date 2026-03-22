@@ -4,14 +4,12 @@ export default function Overview() {
   return (
     <>
       <Navbar />
-      <div style={container}>
-        <h2>Overview</h2>
-        <p>Coming soon...</p>
+      <div className="pt-24 p-10 text-center">
+        <h2 className="text-3xl mb-4">Farm Overview</h2>
+        <p className="text-gray-400">
+          This farm uses IoT sensors and automation to optimize irrigation.
+        </p>
       </div>
     </>
   )
-}
-
-const container = {
-  padding: "40px"
 }

@@ -1,12 +1,7 @@
-body {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background: #0f172a;
-  color: white;
-}
+@import "tailwindcss";
 
-.container {
-  max-width: 1100px;
-  margin: auto;
-  padding: 20px;
+body {
+  background: #020617;
+  color: white;
+  font-family: system-ui;
 }
