@@ -100,11 +100,19 @@ export default function CreateBlog() {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white pt-28 px-6 flex justify-center">
+    <div className="-mt-20">
+    <div className="min-h-screen bg-[#1B4332] text-[#F5F7F2] pt-28 px-6 flex justify-center">
 
       {showToast && <Toast message="Blog created successfully 🎉" />}
 
       <div className="max-w-2xl w-full bg-white/5 p-8 rounded-2xl border border-white/10">
+      
+        <button
+          onClick={() => navigate("/blogs")}
+          className="text-green-400 mb-4 hover:underline"
+        >
+          ← Back
+        </button>
 
         <h1 className="text-3xl font-bold mb-6">Create Blog</h1>
 
@@ -186,6 +194,7 @@ export default function CreateBlog() {
 
         </form>
       </div>
+    </div>
     </div>
   );
 }

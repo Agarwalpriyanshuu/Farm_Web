@@ -31,7 +31,7 @@ export default function Navbar() {
   const isActive = (path) => location.pathname.startsWith(path)
 
   return (
-    <div className="fixed w-full top-0 z-50 bg-black/40 backdrop-blur border-b border-white/10">
+    <div className="fixed w-full top-0 z-50 bg-black/70 backdrop-blur border-b border-white/10">
       <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
 
         <Link

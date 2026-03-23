@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 export default function BlogDetail() {
   const { id } = useParams();
@@ -25,7 +26,11 @@ export default function BlogDetail() {
   }
 
   if (!blog) {
-    return <p className="pt-28 text-center text-gray-400">Loading...</p>;
+    return (
+      <div className="min-h-screen pt-28 text-center text-gray-500">
+        Loading blog...
+      </div>
+    );
   }
 
   const images =
@@ -46,31 +51,35 @@ export default function BlogDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white">
+    <div className="-mt-20">
+    <div className="min-h-screen bg-[#EEF3EA] text-[#1B4332] pt-28 px-6">
 
-      {/* 🔙 Back */}
+      {/* 🔙 Back Button */}
       <button
         onClick={() => navigate("/blogs")}
-        className="fixed top-24 left-6 bg-black/50 px-4 py-2 rounded-lg text-green-400"
+        className="fixed top-24 left-6 bg-white border border-green-200 px-4 py-2 rounded-lg shadow hover:bg-green-50 transition z-10"
       >
         ← Blogs
       </button>
 
       {/* 🖼️ CAROUSEL */}
       {images.length > 0 && (
-        <div className="max-w-5xl mx-auto mt-24 px-6 relative">
-
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-5xl mx-auto relative mb-10"
+        >
           <img
             src={images[current]}
             onClick={() => setLightbox(true)}
-            className="w-full max-h-[400px] object-cover rounded-2xl cursor-pointer"
+            className="w-full max-h object-cover rounded-2xl cursor-pointer shadow-md"
           />
 
           {/* LEFT */}
           {images.length > 1 && (
             <button
               onClick={prevImage}
-              className="absolute left-8 top-1/2 -translate-y-1/2 bg-black/50 px-3 py-2 rounded"
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 px-3 py-2 rounded-full shadow hover:bg-white"
             >
               ◀
             </button>
@@ -80,26 +89,34 @@ export default function BlogDetail() {
           {images.length > 1 && (
             <button
               onClick={nextImage}
-              className="absolute right-8 top-1/2 -translate-y-1/2 bg-black/50 px-3 py-2 rounded"
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 px-3 py-2 rounded-full shadow hover:bg-white"
             >
               ▶
             </button>
           )}
 
           {/* COUNTER */}
-          <div className="text-center mt-2 text-gray-400 text-sm">
+          <div className="text-center mt-3 text-gray-500 text-sm">
             {current + 1} / {images.length}
           </div>
-
-        </div>
+        </motion.div>
       )}
 
       {/* 📄 CONTENT */}
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="max-w-4xl mx-auto p-8 rounded-2xl shadow-sm border border-green-50"
+      >
 
-        <h1 className="text-4xl font-bold">{blog.title}</h1>
+        {/* TITLE */}
+        <h1 className="text-5xl font-bold leading-tight">
+          {blog.title}
+        </h1>
 
-        <p className="text-gray-400 mt-2">
+        {/* META */}
+        <p className="text-gray-500 mt-3 text-sm">
           {new Date(blog.created_at).toDateString()} •{" "}
           {Math.ceil(blog.content.length / 500)} min read
         </p>
@@ -110,7 +127,7 @@ export default function BlogDetail() {
             {blog.tags.split(",").map((tag, i) => (
               <span
                 key={i}
-                className="bg-green-500/10 text-green-400 px-3 py-1 rounded-full text-xs"
+                className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs"
               >
                 #{tag.trim()}
               </span>
@@ -118,18 +135,16 @@ export default function BlogDetail() {
           </div>
         )}
 
-        <div className="mt-8 text-lg leading-relaxed whitespace-pre-line text-gray-200">
+        {/* CONTENT TEXT (FIXED VISIBILITY) */}
+        <div className="mt-8 text-2g leading-relaxed whitespace-pre-line text-[#1B4332]">
           {blog.content}
         </div>
 
-      </div>
+      </motion.div>
 
       {/* 🔥 LIGHTBOX */}
       {lightbox && (
-        <div
-          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
-          onClick={() => setLightbox(false)}
-        >
+        <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
 
           <img
             src={images[current]}
@@ -137,13 +152,34 @@ export default function BlogDetail() {
           />
 
           <button
-            className="absolute top-6 right-6 text-white text-xl"
+            className="absolute top-6 right-6 text-white text-2xl"
             onClick={() => setLightbox(false)}
           >
             ✕
           </button>
+
+          {/* NAV INSIDE LIGHTBOX */}
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={prevImage}
+                className="absolute left-6 text-white text-2xl"
+              >
+                ◀
+              </button>
+
+              <button
+                onClick={nextImage}
+                className="absolute right-6 text-white text-2xl"
+              >
+                ▶
+              </button>
+            </>
+          )}
+
         </div>
       )}
+    </div>
     </div>
   );
 }

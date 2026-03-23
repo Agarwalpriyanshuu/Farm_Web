@@ -10,6 +10,8 @@ export default function EditBlog() {
   const [blog, setBlog] = useState(null);
   const [images, setImages] = useState([]);
   const [preview, setPreview] = useState([]);
+  const [deletedImages, setDeletedImages] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showToast, setShowToast] = useState(false);
@@ -28,16 +30,48 @@ export default function EditBlog() {
     setBlog(data);
   }
 
+  // ✅ Extract storage path
+  function getFilePathFromUrl(url) {
+    try {
+      const urlObj = new URL(url);
+      const parts = urlObj.pathname.split("/blog-images/");
+      return parts[1];
+    } catch {
+      return null;
+    }
+  }
+
+  // ✅ New images
   function handleImageChange(e) {
     const files = Array.from(e.target.files);
     setImages(files);
     setPreview(files.map((f) => URL.createObjectURL(f)));
   }
 
+  // ✅ Remove new image (before upload)
+  function removeNewImage(index) {
+    const newImages = [...images];
+    const newPreview = [...preview];
+
+    newImages.splice(index, 1);
+    newPreview.splice(index, 1);
+
+    setImages(newImages);
+    setPreview(newPreview);
+  }
+
+  // ✅ Remove existing image
+  function removeExistingImage(index) {
+    const updated = [...blog.images];
+    const removed = updated.splice(index, 1)[0];
+
+    setDeletedImages((prev) => [...prev, removed]);
+    setBlog({ ...blog, images: updated });
+  }
+
   async function handleUpdate(e) {
     e.preventDefault();
 
-    // ✅ VALIDATION
     if (!blog.title || !blog.content || !blog.tags) {
       setError("All fields are required");
       return;
@@ -46,9 +80,20 @@ export default function EditBlog() {
     setError("");
     setLoading(true);
 
-    let newUrls = blog.images || [];
+    let updatedImages = blog.images || [];
 
-    // Upload images
+    // 🔥 DELETE removed images from storage
+    if (deletedImages.length > 0) {
+      const paths = deletedImages
+        .map(getFilePathFromUrl)
+        .filter(Boolean);
+
+      if (paths.length > 0) {
+        await supabase.storage.from("blog-images").remove(paths);
+      }
+    }
+
+    // 🔼 Upload new images
     for (let file of images) {
       const path = `blogs/${Date.now()}-${file.name}`;
 
@@ -66,14 +111,17 @@ export default function EditBlog() {
         .from("blog-images")
         .getPublicUrl(path);
 
-      newUrls.push(data.publicUrl);
+      updatedImages.push(data.publicUrl);
     }
 
+    // 📝 Update DB
     const { error: updateError } = await supabase
       .from("blogs")
       .update({
-        ...blog,
-        images: newUrls,
+        title: blog.title,
+        content: blog.content,
+        tags: blog.tags,
+        images: updatedImages,
       })
       .eq("id", id);
 
@@ -85,7 +133,6 @@ export default function EditBlog() {
 
     setShowToast(true);
 
-    // Delay for toast UX
     setTimeout(() => {
       navigate(`/blogs/${id}`, { replace: true });
     }, 1000);
@@ -93,14 +140,15 @@ export default function EditBlog() {
 
   if (!blog) {
     return (
-      <div className="pt-28 text-center text-white">
+      <div className="pt-28 text-center text-gray-500">
         Loading blog...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white pt-28 px-6 flex justify-center">
+    <div className="-mt-20">
+    <div className="mmin-h-screen bg-[#1B4332] text-[#F5F7F2] pt-28 px-6 flex justify-center">
 
       {showToast && <Toast message="Blog updated successfully ✅" />}
 
@@ -115,9 +163,8 @@ export default function EditBlog() {
 
         <h1 className="text-3xl font-bold mb-6">Edit Blog</h1>
 
-        {/* ERROR */}
         {error && (
-          <div className="bg-red-500/10 text-red-400 p-3 rounded mb-4">
+          <div className="bg-red-500/10 text-red-500 p-3 rounded mb-4">
             {error}
           </div>
         )}
@@ -126,6 +173,7 @@ export default function EditBlog() {
 
           <input
             className="w-full p-3 bg-black/40 border rounded"
+            placeholder="Blog Title *"
             value={blog.title}
             onChange={(e) =>
               setBlog({ ...blog, title: e.target.value })
@@ -133,7 +181,8 @@ export default function EditBlog() {
           />
 
           <textarea
-            className="w-full p-3 h-40 bg-black/40 border rounded"
+            className="w-full p-3 h-80 bg-black/40 border rounded"
+            placeholder="Write your blog *"
             value={blog.content}
             onChange={(e) =>
               setBlog({ ...blog, content: e.target.value })
@@ -142,37 +191,59 @@ export default function EditBlog() {
 
           <input
             className="w-full p-3 bg-black/40 border rounded"
+            placeholder="Tags *"
             value={blog.tags}
             onChange={(e) =>
               setBlog({ ...blog, tags: e.target.value })
             }
           />
 
-          {/* Existing Images */}
+          {/* EXISTING IMAGES */}
           {blog.images?.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
-              {blog.images.map((img, i) => (
-                <img key={i} src={img} className="h-20 rounded" />
-              ))}
+            <div>
+              <p className="text-sm mb-2">Existing Images</p>
+              <div className="grid grid-cols-3 gap-2">
+                {blog.images.map((img, i) => (
+                  <div key={i} className="relative">
+                    <img src={img} className="h-20 w-full object-cover rounded" />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(i)}
+                      className="absolute top-1 right-1 bg-red-500 text-white text-xs px-2 rounded"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Upload */}
+          {/* UPLOAD */}
           <input type="file" multiple onChange={handleImageChange} />
 
-          {/* Preview */}
+          {/* NEW PREVIEW */}
           <div className="grid grid-cols-3 gap-2">
             {preview.map((src, i) => (
-              <img key={i} src={src} className="h-20 rounded" />
+              <div key={i} className="relative">
+                <img src={src} className="h-20 w-full object-cover rounded" />
+                <button
+                  type="button"
+                  onClick={() => removeNewImage(i)}
+                  className="absolute top-1 right-1 bg-red-500 text-white text-xs px-2 rounded"
+                >
+                  ✕
+                </button>
+              </div>
             ))}
           </div>
 
           <button
             disabled={loading}
-            className={`w-full py-3 rounded ${
+            className={`w-full py-3 rounded text-white ${
               loading
-                ? "bg-gray-600"
-                : "bg-green-500 hover:bg-green-600"
+                ? "bg-gray-400"
+                : "bg-[#4A7C59] hover:bg-[#3b664a]"
             }`}
           >
             {loading ? "Updating..." : "Update Blog"}
@@ -180,6 +251,7 @@ export default function EditBlog() {
 
         </form>
       </div>
+    </div>
     </div>
   );
 }
