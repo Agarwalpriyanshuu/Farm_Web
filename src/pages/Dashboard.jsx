@@ -42,7 +42,6 @@ export default function Dashboard() {
 
   return (
     <>
-      <Navbar />
 
       <div className="pt-24 px-6 max-w-7xl mx-auto">
 

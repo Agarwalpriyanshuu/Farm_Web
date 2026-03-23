@@ -27,21 +27,25 @@ export default function Navbar() {
   }
 
   // 🎯 Helper for active link
-  const isActive = (path) => location.pathname === path
+  //const isActive = (path) => location.pathname === path
+  const isActive = (path) => location.pathname.startsWith(path)
 
   return (
     <div className="fixed w-full top-0 z-50 bg-black/40 backdrop-blur border-b border-white/10">
       <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
 
-        <h1 className="text-green-400 font-bold text-xl">
+        <Link
+          to="/"
+          className="text-green-400 font-bold text-xl hover:opacity-80 transition"
+        >
           🌱 ANUSHONA FARM
-        </h1>
+        </Link>
 
         <div className="flex gap-6 items-center text-sm">
 
           <Link
             to="/"
-            className={isActive("/") ? activeClass : normalClass}
+            className={isActive("/home") ? activeClass : normalClass}
           >
             Home
           </Link>
@@ -58,6 +62,13 @@ export default function Navbar() {
             className={isActive("/photos") ? activeClass : normalClass}
           >
             Photos
+          </Link>
+
+          <Link
+            to="/blogs"
+            className={isActive("/blogs") ? activeClass : normalClass}
+          >
+            Blogs
           </Link>
 
           {session ? (

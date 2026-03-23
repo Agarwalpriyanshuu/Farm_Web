@@ -1,4 +1,3 @@
-import Navbar from "../components/Navbar"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 
@@ -7,31 +6,33 @@ export default function Home() {
 
   return (
     <>
-      <Navbar />
+      <div className="-mt-20">
 
-      <div className="h-screen bg-[url('https://images.unsplash.com/photo-1500382017468-9049fed747ef')] bg-cover bg-center flex items-center justify-center">
+        <div className="h-screen bg-[url('https://images.unsplash.com/photo-1500382017468-9049fed747ef')] bg-cover bg-center flex items-center justify-center">
 
-        <div className="bg-black/60 backdrop-blur p-10 rounded-xl text-center">
+          <div className="bg-black/0 p-15 rounded-xl text-center">
 
-          <motion.h1
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-5xl font-bold mb-4"
-          >
-            ANUSHONA FARM
-          </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-5xl font-bold mb-4"
+            >
+              ANUSHONA FARM
+            </motion.h1>
 
-          <p className="text-gray-300 mb-6">
-            Smart Farming powered by real-time soil monitoring
-          </p>
+            <p className="text-gray-300 mb-6">
+              Smart Farming powered by real-time soil monitoring
+            </p>
 
-          <button
-            onClick={() => navigate("/overview")}
-            className="bg-green-500 px-6 py-3 rounded-lg hover:bg-green-600"
-          >
-            Explore Farm
-          </button>
+            <button
+              onClick={() => navigate("/overview")}
+              className="bg-green-500 px-6 py-3 rounded-lg hover:bg-green-600"
+            >
+              Explore Farm
+            </button>
+          </div>
         </div>
+
       </div>
 
       <section className="py-20 text-center max-w-4xl mx-auto">
