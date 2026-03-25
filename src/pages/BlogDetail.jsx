@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
 
 export default function BlogDetail() {
   const { id } = useParams();
@@ -136,8 +137,21 @@ export default function BlogDetail() {
         )}
 
         {/* CONTENT TEXT (FIXED VISIBILITY) */}
-        <div className="mt-8 text-2g leading-relaxed whitespace-pre-line text-[#1B4332]">
-          {blog.content}
+        <div className="mt-8 space-y-4 text-lg leading-relaxed">
+
+          <ReactMarkdown
+            components={{
+              h1: (props) => <h1 className="text-3xl font-bold mt-6" {...props} />,
+              h2: (props) => <h2 className="text-2xl font-semibold mt-5" {...props} />,
+              p: (props) => <p className="text-[#1B4332]" {...props} />,
+              strong: (props) => <strong className="font-bold" {...props} />,
+              em: (props) => <em className="italic" {...props} />,
+              li: (props) => <li className="ml-4 list-disc" {...props} />,
+            }}
+          >
+            {blog.content}
+          </ReactMarkdown>
+
         </div>
 
       </motion.div>

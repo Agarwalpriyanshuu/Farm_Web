@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useParams, useNavigate } from "react-router-dom";
 import Toast from "../components/Toast";
+import ReactMarkdown from "react-markdown";
 
 export default function EditBlog() {
   const { id } = useParams();
@@ -10,8 +11,6 @@ export default function EditBlog() {
   const [blog, setBlog] = useState(null);
   const [images, setImages] = useState([]);
   const [preview, setPreview] = useState([]);
-  const [deletedImages, setDeletedImages] = useState([]);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showToast, setShowToast] = useState(false);
@@ -30,26 +29,14 @@ export default function EditBlog() {
     setBlog(data);
   }
 
-  // ✅ Extract storage path
-  function getFilePathFromUrl(url) {
-    try {
-      const urlObj = new URL(url);
-      const parts = urlObj.pathname.split("/blog-images/");
-      return parts[1];
-    } catch {
-      return null;
-    }
-  }
-
-  // ✅ New images
+  // 📸 IMAGE HANDLING
   function handleImageChange(e) {
     const files = Array.from(e.target.files);
     setImages(files);
     setPreview(files.map((f) => URL.createObjectURL(f)));
   }
 
-  // ✅ Remove new image (before upload)
-  function removeNewImage(index) {
+  function removePreview(index) {
     const newImages = [...images];
     const newPreview = [...preview];
 
@@ -60,15 +47,32 @@ export default function EditBlog() {
     setPreview(newPreview);
   }
 
-  // ✅ Remove existing image
-  function removeExistingImage(index) {
-    const updated = [...blog.images];
-    const removed = updated.splice(index, 1)[0];
+  // ✍️ TOOLBAR
+  function wrap(symbol) {
+    const textarea = document.getElementById("editor");
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
 
-    setDeletedImages((prev) => [...prev, removed]);
-    setBlog({ ...blog, images: updated });
+    const selected = blog.content.substring(start, end);
+
+    const newText =
+      blog.content.substring(0, start) +
+      symbol +
+      selected +
+      symbol +
+      blog.content.substring(end);
+
+    setBlog({ ...blog, content: newText });
   }
 
+  function insert(text) {
+    setBlog((prev) => ({
+      ...prev,
+      content: prev.content + text,
+    }));
+  }
+
+  // 🚀 UPDATE BLOG
   async function handleUpdate(e) {
     e.preventDefault();
 
@@ -80,20 +84,9 @@ export default function EditBlog() {
     setError("");
     setLoading(true);
 
-    let updatedImages = blog.images || [];
+    let newUrls = blog.images || [];
 
-    // 🔥 DELETE removed images from storage
-    if (deletedImages.length > 0) {
-      const paths = deletedImages
-        .map(getFilePathFromUrl)
-        .filter(Boolean);
-
-      if (paths.length > 0) {
-        await supabase.storage.from("blog-images").remove(paths);
-      }
-    }
-
-    // 🔼 Upload new images
+    // Upload new images
     for (let file of images) {
       const path = `blogs/${Date.now()}-${file.name}`;
 
@@ -111,17 +104,14 @@ export default function EditBlog() {
         .from("blog-images")
         .getPublicUrl(path);
 
-      updatedImages.push(data.publicUrl);
+      newUrls.push(data.publicUrl);
     }
 
-    // 📝 Update DB
     const { error: updateError } = await supabase
       .from("blogs")
       .update({
-        title: blog.title,
-        content: blog.content,
-        tags: blog.tags,
-        images: updatedImages,
+        ...blog,
+        images: newUrls,
       })
       .eq("id", id);
 
@@ -140,7 +130,7 @@ export default function EditBlog() {
 
   if (!blog) {
     return (
-      <div className="pt-28 text-center text-gray-500">
+      <div className="pt-28 text-center text-gray-400">
         Loading blog...
       </div>
     );
@@ -148,21 +138,23 @@ export default function EditBlog() {
 
   return (
     <div className="-mt-20">
-    <div className="mmin-h-screen bg-[#1B4332] text-[#F5F7F2] pt-28 px-6 flex justify-center">
+    <div className="min-h-screen bg-gradient-to-b from-[#EEF3EA] to-[#DCE8D5] text-[#1B4332] pt-28 px-6 flex justify-center">
 
       {showToast && <Toast message="Blog updated successfully ✅" />}
 
-      <div className="max-w-2xl w-full bg-white/5 p-8 rounded-2xl border border-white/10">
+      <div className="max-w-6xl w-full bg-white/70 backdrop-blur p-8 rounded-2xl shadow border">
 
+        {/* BACK */}
         <button
           onClick={() => navigate("/blogs")}
-          className="text-green-400 mb-4 hover:underline"
+          className="text-green-600 mb-4 hover:underline"
         >
           ← Back
         </button>
 
-        <h1 className="text-3xl font-bold mb-6">Edit Blog</h1>
+        <h1 className="text-3xl font-bold mb-6">Edit Blog ✍️</h1>
 
+        {/* ERROR */}
         {error && (
           <div className="bg-red-500/10 text-red-500 p-3 rounded mb-4">
             {error}
@@ -171,27 +163,57 @@ export default function EditBlog() {
 
         <form onSubmit={handleUpdate} className="space-y-5">
 
+          {/* TITLE */}
           <input
-            className="w-full p-3 bg-black/40 border rounded"
-            placeholder="Blog Title *"
+            className="w-full p-3 border rounded"
             value={blog.title}
             onChange={(e) =>
               setBlog({ ...blog, title: e.target.value })
             }
           />
 
-          <textarea
-            className="w-full p-3 h-80 bg-black/40 border rounded"
-            placeholder="Write your blog *"
-            value={blog.content}
-            onChange={(e) =>
-              setBlog({ ...blog, content: e.target.value })
-            }
-          />
+          {/* TOOLBAR */}
+          <div className="flex gap-2 flex-wrap">
+            <button type="button" onClick={() => wrap("**")} className="btn">B</button>
+            <button type="button" onClick={() => wrap("*")} className="btn">I</button>
+            <button type="button" onClick={() => insert("\n# ")} className="btn">H1</button>
+            <button type="button" onClick={() => insert("\n## ")} className="btn">H2</button>
+            <button type="button" onClick={() => insert("\n- ")} className="btn">•</button>
+          </div>
 
+          {/* EDITOR + PREVIEW */}
+          <div className="grid md:grid-cols-2 gap-6">
+
+            <textarea
+              id="editor"
+              className="w-full h-96 p-4 border rounded bg-white"
+              value={blog.content}
+              onChange={(e) =>
+                setBlog({ ...blog, content: e.target.value })
+              }
+            />
+
+            <div className="bg-white p-4 rounded border overflow-y-auto">
+
+              <ReactMarkdown
+                components={{
+                  h1: (props) => <h1 className="text-3xl font-bold mt-6" {...props} />,
+                  h2: (props) => <h2 className="text-2xl font-semibold mt-5" {...props} />,
+                  p: (props) => <p className="text-[#1B4332]" {...props} />,
+                  strong: (props) => <strong className="font-bold" {...props} />,
+                  em: (props) => <em className="italic" {...props} />,
+                  li: (props) => <li className="ml-4 list-disc" {...props} />,
+                }}
+              >
+                {blog.content}
+              </ReactMarkdown>
+
+            </div>
+          </div>
+
+          {/* TAGS */}
           <input
-            className="w-full p-3 bg-black/40 border rounded"
-            placeholder="Tags *"
+            className="w-full p-3 border rounded"
             value={blog.tags}
             onChange={(e) =>
               setBlog({ ...blog, tags: e.target.value })
@@ -200,37 +222,25 @@ export default function EditBlog() {
 
           {/* EXISTING IMAGES */}
           {blog.images?.length > 0 && (
-            <div>
-              <p className="text-sm mb-2">Existing Images</p>
-              <div className="grid grid-cols-3 gap-2">
-                {blog.images.map((img, i) => (
-                  <div key={i} className="relative">
-                    <img src={img} className="h-20 w-full object-cover rounded" />
-                    <button
-                      type="button"
-                      onClick={() => removeExistingImage(i)}
-                      className="absolute top-1 right-1 bg-red-500 text-white text-xs px-2 rounded"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-3 gap-2">
+              {blog.images.map((img, i) => (
+                <img key={i} src={img} className="h-20 rounded object-cover" />
+              ))}
             </div>
           )}
 
-          {/* UPLOAD */}
+          {/* NEW UPLOAD */}
           <input type="file" multiple onChange={handleImageChange} />
 
-          {/* NEW PREVIEW */}
+          {/* PREVIEW */}
           <div className="grid grid-cols-3 gap-2">
             {preview.map((src, i) => (
               <div key={i} className="relative">
-                <img src={src} className="h-20 w-full object-cover rounded" />
+                <img src={src} className="h-20 rounded object-cover" />
                 <button
                   type="button"
-                  onClick={() => removeNewImage(i)}
-                  className="absolute top-1 right-1 bg-red-500 text-white text-xs px-2 rounded"
+                  onClick={() => removePreview(i)}
+                  className="absolute top-0 right-0 bg-red-500 text-white text-xs px-1"
                 >
                   ✕
                 </button>
@@ -238,12 +248,13 @@ export default function EditBlog() {
             ))}
           </div>
 
+          {/* SUBMIT */}
           <button
             disabled={loading}
-            className={`w-full py-3 rounded text-white ${
+            className={`w-full py-3 rounded ${
               loading
-                ? "bg-gray-400"
-                : "bg-[#4A7C59] hover:bg-[#3b664a]"
+                ? "bg-gray-500"
+                : "bg-[#4A7C59] hover:bg-[#3b664a] text-white"
             }`}
           >
             {loading ? "Updating..." : "Update Blog"}
@@ -251,6 +262,19 @@ export default function EditBlog() {
 
         </form>
       </div>
+
+      <style>
+        {`
+          .btn {
+            background:#4A7C59;
+            color:white;
+            padding:6px 10px;
+            border-radius:6px;
+            font-size:12px;
+          }
+        `}
+      </style>
+
     </div>
     </div>
   );

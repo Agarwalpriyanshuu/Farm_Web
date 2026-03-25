@@ -1,55 +1,70 @@
 import { useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import Toast from "../components/Toast";
 
 export default function CreateBlog() {
+  const navigate = useNavigate();
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
   const [images, setImages] = useState([]);
   const [preview, setPreview] = useState([]);
 
-  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [showToast, setShowToast] = useState(false);
 
-  const navigate = useNavigate();
-
-  function validate() {
-    let newErrors = {};
-
-    if (!title.trim()) newErrors.title = "Title is required";
-    if (!content.trim()) newErrors.content = "Content is required";
-    if (!tags.trim()) newErrors.tags = "Tags are required";
-
-    setErrors(newErrors);
-
-    return Object.keys(newErrors).length === 0;
-  }
-
-  function handleImageChange(e) {
+  // 📸 IMAGE HANDLING
+  function handleImages(e) {
     const files = Array.from(e.target.files);
     setImages(files);
     setPreview(files.map((f) => URL.createObjectURL(f)));
   }
 
-  function removeImage(index) {
+  function removePreview(index) {
     const newImages = [...images];
     const newPreview = [...preview];
-
     newImages.splice(index, 1);
     newPreview.splice(index, 1);
-
     setImages(newImages);
     setPreview(newPreview);
   }
 
+  // ✍️ TOOLBAR
+  function wrap(symbol) {
+    const textarea = document.getElementById("editor");
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    const selected = content.substring(start, end);
+
+    const newText =
+      content.substring(0, start) +
+      symbol +
+      selected +
+      symbol +
+      content.substring(end);
+
+    setContent(newText);
+  }
+
+  function insert(text) {
+    setContent((prev) => prev + text);
+  }
+
+  // 🚀 SUBMIT
   async function handleSubmit(e) {
     e.preventDefault();
 
-    if (!validate()) return;
+    if (!title || !content || !tags) {
+      setError("All fields are mandatory");
+      return;
+    }
 
+    setError("");
     setLoading(true);
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -64,7 +79,7 @@ export default function CreateBlog() {
         .upload(path, file);
 
       if (error) {
-        alert(error.message);
+        setError(error.message);
         setLoading(false);
         return;
       }
@@ -76,104 +91,107 @@ export default function CreateBlog() {
       imageUrls.push(data.publicUrl);
     }
 
-    const { error } = await supabase.from("blogs").insert([
-      {
-        title,
-        content,
-        tags,
-        images: imageUrls,
-        user_id: user.id,
-      },
-    ]);
-
-    if (error) {
-      alert("Error creating blog");
-      setLoading(false);
-      return;
-    }
+    await supabase.from("blogs").insert({
+      title,
+      content,
+      tags,
+      images: imageUrls,
+      user_id: user.id,
+    });
 
     setShowToast(true);
 
-    setTimeout(() => {
-      navigate("/blogs");
-    }, 1000);
+    setTimeout(() => navigate("/blogs"), 1000);
   }
 
   return (
     <div className="-mt-20">
-    <div className="min-h-screen bg-[#1B4332] text-[#F5F7F2] pt-28 px-6 flex justify-center">
-
-      {showToast && <Toast message="Blog created successfully 🎉" />}
-
-      <div className="max-w-2xl w-full bg-white/5 p-8 rounded-2xl border border-white/10">
-      
+    <div className="mmin-h-screen bg-gradient-to-b from-[#EEF3EA] to-[#DCE8D5] text-[#1B4332] pt-28 px-6 flex justify-center">
+      <div className="max-w-6xl w-full bg-white/70 backdrop-blur p-8 rounded-2xl shadow border">
+        {/* BACK */}
         <button
           onClick={() => navigate("/blogs")}
-          className="text-green-400 mb-4 hover:underline"
+          className="text-green-600 mb-5 hover:underline"
         >
           ← Back
         </button>
 
-        <h1 className="text-3xl font-bold mb-6">Create Blog</h1>
+        {showToast && <Toast message="Blog published successfully 🌱" />}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="max-w-6xl mx-auto">
+
+          <h1 className="text-3xl font-bold mb-6">Create Blog ✍️</h1>
+
+          {error && (
+            <div className="bg-red-500/10 text-red-500 p-3 rounded mb-4">
+              {error}
+            </div>
+          )}
 
           {/* TITLE */}
-          <div>
-            <input
-              className={`w-full p-3 bg-black/40 border rounded ${
-                errors.title ? "border-red-500" : "border-white/10"
-              }`}
-              placeholder="Blog Title *"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            {errors.title && (
-              <p className="text-red-400 text-sm mt-1">{errors.title}</p>
-            )}
+          <input
+            className="w-full p-3 border rounded mb-4"
+            placeholder="Blog title..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+
+          {/* TOOLBAR */}
+          <div className="flex gap-2 flex-wrap mb-2">
+            <button onClick={() => wrap("**")} className="btn">B</button>
+            <button onClick={() => wrap("*")} className="btn">I</button>
+            <button onClick={() => insert("\n# ")} className="btn">H1</button>
+            <button onClick={() => insert("\n## ")} className="btn">H2</button>
+            <button onClick={() => insert("\n- ")} className="btn">•</button>
           </div>
 
-          {/* CONTENT */}
-          <div>
+          {/* EDITOR + PREVIEW */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+
             <textarea
-              className={`w-full p-3 h-40 bg-black/40 border rounded ${
-                errors.content ? "border-red-500" : "border-white/10"
-              }`}
-              placeholder="Write your blog *"
+              id="editor"
+              className="w-full h-96 p-4 border rounded bg-white"
               value={content}
               onChange={(e) => setContent(e.target.value)}
+              placeholder="Write your blog..."
             />
-            {errors.content && (
-              <p className="text-red-400 text-sm mt-1">{errors.content}</p>
-            )}
+
+            <div className="bg-white p-4 rounded border overflow-y-auto">
+
+              <ReactMarkdown
+                components={{
+                  h1: (props) => <h1 className="text-3xl font-bold mt-6" {...props} />,
+                  h2: (props) => <h2 className="text-2xl font-semibold mt-5" {...props} />,
+                  p: (props) => <p className="text-[#1B4332]" {...props} />,
+                  strong: (props) => <strong className="font-bold" {...props} />,
+                  em: (props) => <em className="italic" {...props} />,
+                  li: (props) => <li className="ml-4 list-disc" {...props} />,
+                }}
+              >
+                {content || "Live preview..."}
+              </ReactMarkdown>
+
+            </div>
           </div>
 
           {/* TAGS */}
-          <div>
-            <input
-              className={`w-full p-3 bg-black/40 border rounded ${
-                errors.tags ? "border-red-500" : "border-white/10"
-              }`}
-              placeholder="Tags *"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-            />
-            {errors.tags && (
-              <p className="text-red-400 text-sm mt-1">{errors.tags}</p>
-            )}
-          </div>
+          <input
+            className="w-full p-3 border rounded mb-4"
+            placeholder="Tags (comma separated)"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+          />
 
-          <input type="file" multiple onChange={handleImageChange} />
+          {/* IMAGES */}
+          <input type="file" multiple onChange={handleImages} />
 
-          {/* Preview */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex gap-2 mt-3 flex-wrap">
             {preview.map((src, i) => (
               <div key={i} className="relative">
-                <img src={src} className="h-24 w-full object-cover rounded" />
+                <img src={src} className="h-20 w-20 object-cover rounded" />
                 <button
-                  type="button"
-                  onClick={() => removeImage(i)}
-                  className="absolute top-1 right-1 bg-red-500 text-xs px-2 rounded"
+                  onClick={() => removePreview(i)}
+                  className="absolute top-0 right-0 bg-red-500 text-white text-xs px-1"
                 >
                   ✕
                 </button>
@@ -181,19 +199,29 @@ export default function CreateBlog() {
             ))}
           </div>
 
+          {/* SUBMIT */}
           <button
+            onClick={handleSubmit}
             disabled={loading}
-            className={`w-full py-3 rounded ${
-              loading
-                ? "bg-gray-600"
-                : "bg-green-500 hover:bg-green-600"
-            }`}
+            className="w-full mt-6 bg-[#4A7C59] text-white py-3 rounded hover:bg-[#3b664a]"
           >
             {loading ? "Publishing..." : "Publish Blog"}
           </button>
 
-        </form>
+        </div>
       </div>
+      <style>
+        {`
+          .btn {
+            background:#4A7C59;
+            color:white;
+            padding:6px 10px;
+            border-radius:6px;
+            font-size:12px;
+          }
+        `}
+      </style>
+
     </div>
     </div>
   );
